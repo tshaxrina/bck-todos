@@ -1,7 +1,7 @@
 let form = document.querySelector(".todoask")
 let inp = form.querySelector("#todo")
 let container = document.querySelector('.box')
-let URL = "http://localhost:9000/todos"
+let URL = "http://localhost:9001/todos"
 // modal
 let modal = document.querySelector('.modal')
 let h2 = modal.querySelector('h2')
@@ -10,14 +10,17 @@ let modal_inp = modal.querySelector('input')
 let modal_close = modal.querySelector('.close')
 // modal
 let todos = []
-    fetch(URL)
-.then(res => res.json())
-.then(res => {
-    reload(res)
-    todos = res
-})
-
-
+//     fetch(URL)
+// .then(res => res.json())
+// .then(res => {
+//     reload(res)
+//     todos = res
+// })
+function fetching() {
+    axios(URL)
+        .then((res) => reload(res.data));
+}
+fetching()
 
 form.onsubmit = (e) => {
     e.preventDefault();
@@ -25,20 +28,16 @@ form.onsubmit = (e) => {
     let fm = new FormData(form)
 
     let user = {
-        fullName: fm.get('todo')
+        title: fm.get('todo'),
+        time: new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds()
     }
 
-    if(user.fullName === "") return
+    if (user.title === "") return
 
-    fetch(URL, {
-        method: "post",
-        body: JSON.stringify(user)
-    })
-    .then(res => res.json())
-    .then(res => {
-        todos.push(res)
-        reload(todos)
-    })
+    axios.post(URL, user)
+        .then(res => {
+            fetching()
+        })
 }
 
 
@@ -99,65 +98,55 @@ function reload(arr) {
 
         item.ondblclick = () => {
 
-            fetch(URL + "/" + item.id, {
-                method: "put", 
-                body: JSON.stringify({fullName: newName}),
-                headers: {
-                    "Content-Type": "application/json",
-                }
-            })
-            .then(res => {
-                if(res.status === 200 || res.status === 201) {
-                    title_text.textContent = newName
-                    todos.find(el => el.id === item.id).fullName = newName
-                }
-            })
-            // modal.classList.add('show')
-            // h2.innerHTML = `Title: ${todo.title}`
-            // modal_inp.setAttribute('placeholder', `change: ${todo.title}`)
+            axios.patch(URL + "/" + item.id)
+                .then(res => {
+                    if (res.status === 200 || res.status === 201) {
+                        title.textContent = newName
+                        todos.find(el => el.id === item.id).title = newName
+                    }
+                })
+            modal.classList.add('show')
+            h2.innerHTML = `Title: ${todo.title}`
+            modal_inp.setAttribute('placeholder', `change: ${todo.title}`)
 
-            // modal_form.onsubmit = (e) => {
-            //     e.preventDefault()
+            modal_form.onsubmit = (e) => {
+                e.preventDefault()
 
-            //     todo.title = modal_inp.value
-            //     todo.time = new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds()
+                todo.title = modal_inp.value
+                todo.time = new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds()
 
-            //     title_text.innerHTML = todo.title
+                title_text.innerHTML = todo.title
 
-            //     modal_form.reset()
-            //     modal.classList.remove('show')
+                modal_form.reset()
+                modal.classList.remove('show')
             }
-            
+        }
+
+        clsButton.onclick = () => {
+            axios.delete(URL + "/" + item.id)
+                .then(res => {
+                    if (res.status === 200 || res.status === 201) {
+                        item.remove()
+                    } else {
+                        alert('Something went wrong!')
+                    }
+                })
+            // item.style.display = "none"
+
+            // let isSure = confirm('Are you sure?')
+
+            // if (isSure) {
+            //     let idx = arr.indexOf(todo)
+            //     todos.splice(idx, 1)
+            //     item.remove()
+            // }
+
+            //         }
+            // }
 
         }
-        clsButton.onclick = () => {
-            fetch(URL + "/" + item.id, {
-                method: "delete"
-            })
-            .then(res => {
-                if(res.status === 200 || res.status === 201) {
-                    item.remove()
-                } else {
-                    alert('Something went wrong!')
-                }
-            })
-                // item.style.display = "none"
-
-                // let isSure = confirm('Are you sure?')
-
-                // if (isSure) {
-                //     let idx = arr.indexOf(todo)
-                //     todos.splice(idx, 1)
-                //     item.remove()
-                // }
-
-            }
-
-        
-
     }
-
-// }
+}
 
 modal_close.onclick = () => {
     modal_form.reset()
